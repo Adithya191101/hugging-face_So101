@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Model checkpoints (too large for git)
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+
+# Data files (use HuggingFace Hub instead)
+datasets/
+*.parquet
+*.arrow
+
+# Logs
+logs/
+wandb/
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large video files (videos under 25MB are committed)
+# videos/*.mp4
+# videos/*.avi
+!videos/README.md
+
+# Keep placeholder READMEs
+!videos/README.md
+!results/README.md
+!configs/README.md
+!scripts/README.md

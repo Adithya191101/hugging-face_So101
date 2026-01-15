@@ -8,7 +8,10 @@ This folder contains demonstration videos of the ACT and SmolVLA models in actio
 
 ### 1. ACT Model - Pick-and-Place (80% Success Rate)
 
-<video src="https://github.com/Adithya191101/hugging-face_So101/raw/main/videos/ACT_policy.mp4" controls width="100%"></video>
+
+https://github.com/user-attachments/assets/b1ddd207-edee-48ed-bd7f-71b98955f406
+
+
 
 **Description**: ACT (Action Chunking Transformer) model performing pick-and-place tasks on soft irregular objects
 
@@ -25,7 +28,10 @@ This folder contains demonstration videos of the ACT and SmolVLA models in actio
 
 ### 2. SmolVLA - Language-Conditioned Grasping
 
-<video src="https://github.com/Adithya191101/hugging-face_So101/raw/main/videos/SmolVLA.mp4" controls width="100%"></video>
+
+https://github.com/user-attachments/assets/3799a5ea-dcf2-4eb9-a4b8-d78f636db92d
+
+
 
 **Description**: SmolVLA (Small Vision-Language-Action) model performing language-conditioned grasping
 
@@ -43,7 +49,10 @@ This folder contains demonstration videos of the ACT and SmolVLA models in actio
 
 ### 3. Data Collection via Teleoperation
 
-<video src="https://github.com/Adithya191101/hugging-face_So101/raw/main/videos/Imitation.mp4" controls width="100%"></video>
+
+
+https://github.com/user-attachments/assets/7b4ca3ef-335a-4bf6-befb-b0d2956e9aa5
+
 
 **Description**: Imitation learning demonstration showing teleoperation and data collection process
 

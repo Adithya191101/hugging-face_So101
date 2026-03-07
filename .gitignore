@@ -12,7 +12,6 @@ build/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
 
 # Model checkpoints (too large for git)
 checkpoints/

@@ -1,144 +1,80 @@
 # Demo Videos
 
-This folder contains demonstration videos of the ACT and SmolVLA models in action.
+Demonstration videos arranged chronologically, telling the full story from data collection to 85% success.
 
 ---
 
-## 📹 Video Demonstrations
+## Video Demonstrations
 
-### 1. ACT Model - Pick-and-Place (80% Success Rate)
-
-
-https://github.com/user-attachments/assets/b1ddd207-edee-48ed-bd7f-71b98955f406
-
-
-
-**Description**: ACT (Action Chunking Transformer) model performing pick-and-place tasks on soft irregular objects
-
-**Key Highlights**:
-- Smooth, coordinated motion through temporal action chunking
-- Successful grasping of deformable brain toy
-- Demonstrates 80% success rate achievement
-- Shows temporal ensembling for fluid trajectories
-
-**Performance**: 80% success rate on soft irregular round/obloid objects
-**File**: ACT_policy.mp4 (19 MB)
-
----
-
-### 2. SmolVLA - Language-Conditioned Grasping
-
-
-https://github.com/user-attachments/assets/3799a5ea-dcf2-4eb9-a4b8-d78f636db92d
-
-
-
-**Description**: SmolVLA (Small Vision-Language-Action) model performing language-conditioned grasping
-
-**Key Highlights**:
-- Language-conditioned task execution: "Grab the brain"
-- Vision-language model (500M parameters) for robotic manipulation
-- Demonstrates current 33% success rate after debugging
-- Shows object approach and grasping behavior
-
-**Current Status**: 33% success rate, working towards >70% with generalization improvements
-**Model**: SmolVLM2-500M-Video-Instruct fine-tuned for robotic manipulation
-**File**: SmolVLA.mp4 (5.1 MB)
-
----
-
-### 3. Data Collection via Teleoperation
-
-
+### 1. Data Collection via Teleoperation
 
 https://github.com/user-attachments/assets/7b4ca3ef-335a-4bf6-befb-b0d2956e9aa5
 
+**Description**: 239 episodes collected via SO-101 leader arm teleoperation. Dual cameras (front + wrist) at 640x480 @ 30fps.
 
-**Description**: Imitation learning demonstration showing teleoperation and data collection process
-
-**Key Highlights**:
-- Shows the data collection methodology using SO-101 leader arm
-- Demonstrates how human demonstrations are recorded
-- Illustrates the teleoperation setup for training data
-- Foundation for both ACT and SmolVLA training datasets
-
-**Training Data**: 241 episodes, 100,832 frames collected via teleoperation
 **File**: Imitation.mp4 (6.3 MB)
 
 ---
 
-## 🎯 Video Usage
+### 2. ACT Model — 80% Success Rate (Baseline)
 
-### For Resume/Portfolio
-- **ACT_policy.mp4**: Best demonstration of successful implementation (80% success)
-- **SmolVLA.mp4**: Shows cutting-edge VLA research and debugging process
-- **Imitation.mp4**: Demonstrates data collection methodology
+https://github.com/user-attachments/assets/b1ddd207-edee-48ed-bd7f-71b98955f406
 
-### For Interviews
-- Use ACT video to show successful implementation
-- Use SmolVLA video to discuss debugging challenges (language mismatch, camera swap)
-- Use Imitation video to explain training data pipeline
+**Description**: ACT (Action Chunking Transformer) [Zhao et al., 2023] performing pick-and-place on deformable brain toy. Deterministic trajectories with temporal ensembling. Established 80% baseline but brittle to camera/lighting changes.
 
-### For GitHub Visitors
-All videos demonstrate:
-- Real robot hardware (SO-101 6-DOF arm)
-- Dual-camera setup (front + wrist views)
-- End-to-end pipeline from teleoperation to autonomous execution
+**File**: ACT_policy.mp4 (19 MB)
 
 ---
 
-## 📊 Technical Details
+### 3. SmolVLA Phase 1 — Language-Conditioned Grasping (~33%)
 
-### Hardware
-- **Robot**: SO-101 Follower Arm (6-DOF)
-- **Teleoperation**: SO-101 Leader Arm
-- **Cameras**:
-  - camera1: Front view (scene/table overview)
-  - camera2: Wrist view (gripper close-up)
-- **Object**: Soft irregular brain toy (deformable)
+https://github.com/user-attachments/assets/3799a5ea-dcf2-4eb9-a4b8-d78f636db92d
 
-### Software Stack
-- **Framework**: LeRobot (HuggingFace)
-- **Models**: ACT, SmolVLA
-- **Training**: Google Colab (V100/A100 GPUs)
-- **Tracking**: Weights & Biases
+**Description**: SmolVLA Phase 1 (v1-v9). Robot approaches correctly but gripper oscillates. Diagnosed as training methodology issue — led to curriculum training approach in Phase 2.
 
-### Dataset
-- **Episodes**: 241 successful demonstrations
-- **Frames**: 100,832 total frames
-- **FPS**: 30 frames per second
-- **Task**: Language-conditioned grasping ("Grab the brain")
+**File**: SmolVLA.mp4 (5.1 MB)
 
 ---
 
-## 🔗 Related Links
+### 4. SmolVLA Phase 2 — 85% Success Rate (Robot Camera View)
 
-- **Training Dataset**: [AdithyaRajendran/so101_grab_brain_t2](https://huggingface.co/datasets/AdithyaRajendran/so101_grab_brain_t2)
-- **ACT Model**: [AdithyaRajendran/so101_act_policy](https://huggingface.co/AdithyaRajendran/so101_act_policy)
-- **SmolVLA Model**: [AdithyaRajendran/so101_smolvla_policy_FINAL_v5](https://huggingface.co/AdithyaRajendran/so101_smolvla_policy_FINAL_v5)
-- **LeRobot Framework**: [github.com/huggingface/lerobot](https://github.com/huggingface/lerobot)
+**Description**: SmolVLA Proven v3 with curriculum training + inference optimization. Dual-camera side-by-side view from robot's perspective. Shows consistent grasp and place behavior with deformable object.
 
----
+- Curriculum training: 3 iterations (v1→v2→v3) [Bengio et al., 2009]
+- Inference: num_steps=20, n_action_steps=10
+- Flow matching denoising [Lipman et al., 2023]
 
-## 🎬 Video Specifications
-
-| Video | Duration | Resolution | Format | Size |
-|-------|----------|------------|--------|------|
-| ACT_policy.mp4 | ~30-60s | 640x480 | MP4 | 19 MB |
-| SmolVLA.mp4 | ~30-60s | 640x480 | MP4 | 5.1 MB |
-| Imitation.mp4 | ~30-60s | 640x480 | MP4 | 6.3 MB |
+**File**: smolvla_eval_v3.mp4 (19 MB)
 
 ---
 
-## 📝 Notes
+### 5. SmolVLA Phase 2 — Full Robot View (External Camera)
 
-- Videos demonstrate real-world performance, not simulations
-- All footage recorded on actual SO-101 hardware
-- Videos show both successful and challenging scenarios
-- Dual-camera views provide comprehensive perspective
+**Description**: External phone camera showing the complete SO-101 workspace during continuous 85% success evaluation. Demonstrates camera displacement robustness and lighting variation handling. Policy ran continuously without restart between episodes.
+
+**File**: SmolVLA_v3_phone.mp4 (32 MB)
 
 ---
 
-**Last Updated**: January 15, 2026
-**Status**: ✅ Videos Added
-**Next**: Add W&B training curves and analysis plots to results/ folder
+## Video Specifications
+
+| Video | Description | Format | Size |
+|-------|-------------|--------|------|
+| Imitation.mp4 | Data collection via teleoperation | MP4, 640x480 | 6.3 MB |
+| ACT_policy.mp4 | ACT baseline — 80% success | MP4, 640x480 | 19 MB |
+| SmolVLA.mp4 | Phase 1 — ~33% success | MP4, 640x480 | 5.1 MB |
+| smolvla_eval_v3.mp4 | Phase 2 — 85% robot camera | MP4, 1296x550 | 19 MB |
+| SmolVLA_v3_phone.mp4 | Phase 2 — 85% external camera | MP4 | 32 MB |
+
+---
+
+## Related Links
+
+- **Dataset**: [AdithyaRajendran/so101_grab_brain_t2](https://huggingface.co/datasets/AdithyaRajendran/so101_grab_brain_t2)
+- **SmolVLA Proven v3**: [smolvla_so101_grab_brain_t2_proven_v3](https://huggingface.co/AdithyaRajendran/smolvla_so101_grab_brain_t2_proven_v3)
+- **ACT Model**: [so101_act_policy_V2](https://huggingface.co/AdithyaRajendran/so101_act_policy_V2)
+- **LeRobot**: [github.com/huggingface/lerobot](https://github.com/huggingface/lerobot)
+
+---
+
+*Last Updated: March 2026*

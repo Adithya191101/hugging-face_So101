@@ -2,7 +2,7 @@
 
 This document outlines the complete workflow I followed in this project, from data collection to deployment.
 
-## Timeline: December 2024 - January 2025
+## Timeline: December 2024 - March 2026
 
 ---
 
@@ -36,7 +36,7 @@ lerobot-record \
 - 100,000 training steps
 - chunk_size=100 for smooth trajectories
 
-**Result:** ✅ **80% success rate** on pick-and-place tasks
+**Result:** - **80% success rate** on pick-and-place tasks
 
 ---
 
@@ -91,14 +91,14 @@ print(f"Gripper closed: {np.mean(gripper_actions < 0.2) * 100}%")
 eval_ds = load_dataset("AdithyaRajendran/eval_so101_smolvla_policy_FINAL_v4")
 eval_gripper = eval_ds["action"][:, 5]
 print(f"Gripper closed: {np.mean(eval_gripper < 0.2) * 100}%")
-# Output: 0.0%  ⚠️ PROBLEM IDENTIFIED!
+# Output: 0.0%  WARNING: PROBLEM IDENTIFIED!
 ```
 
 2. **Checked dataset metadata:**
 ```python
 # Found training task: "Grab the brain"
 # But deployment used: "Grasp a brain and put it in the bin."
-# LANGUAGE MISMATCH! ⚠️
+# LANGUAGE MISMATCH! 
 ```
 
 3. **Fixed language instruction:**
@@ -127,7 +127,7 @@ print(f"Gripper closed: {np.mean(eval_gripper < 0.2) * 100}%")
 lerobot-record --display_data=true
 # Checked camera1 window: showed WRIST view (should be FRONT)
 # Checked camera2 window: showed FRONT view (should be WRIST)
-# CAMERAS WERE SWAPPED! ⚠️
+# CAMERAS WERE SWAPPED! 
 ```
 
 3. **Fixed camera mapping:**
@@ -157,7 +157,7 @@ steps = 50000
 steps_per_epoch = total_frames / batch_size  # 3,151
 epochs = steps / steps_per_epoch
 print(f"Epochs: {epochs}")
-# Output: 15.87 epochs ⚠️ WAY TOO MANY!
+# Output: 15.87 epochs WARNING: WAY TOO MANY!
 ```
 
 2. **Researched industry standards:**
@@ -168,7 +168,7 @@ print(f"Epochs: {epochs}")
 ```bash
 # v5 retraining
 --steps=20000  # Down from 50,000
-# Result: 6.35 epochs ✅ OPTIMAL
+# Result: 6.35 epochs - OPTIMAL
 ```
 
 **Result:** 2.5x faster training (9h → 3.5h), better generalization
@@ -255,7 +255,7 @@ python lerobot_train.py \
 **Training stats:**
 - Time: 3.5 hours on V100 GPU
 - Final loss: 0.012
-- Epochs: 6.35 ✅
+- Epochs: 6.35 
 - GPU utilization: 90-95%
 
 **Deployment results:**
@@ -296,33 +296,102 @@ python lerobot_train.py \
 
 ---
 
+## Phase 6: Curriculum Training Breakthrough (March 2026)
+
+### Research & Methodology Shift
+
+After Phase 5's diagnosis (gripper oscillation = training methodology, not model capacity), studied:
+- Diffusion Policy [Chi et al., 2023] — iterative behavior policy refinement
+- Conditional Flow Matching [Lipman et al., 2023] — denoising precision
+- Curriculum Learning [Bengio et al., 2009] — progressive training from checkpoints
+- LoRA [Hu et al., 2021] — efficient fine-tuning for action space exploration
+
+### Step 1: LoRA Fine-Tuning (Exploration)
+Applied Low-Rank Adaptation to explore the action manifold:
+```bash
+--peft.method_type=LORA --peft.r=64
+# Targets: q_proj/v_proj in LM expert + state/action projections
+```
+
+### Step 2: Full Expert Training with Pretrained Backbone
+Established correct training configuration:
+```bash
+python -m lerobot.scripts.lerobot_train \
+  --policy.path=lerobot/smolvla_base \
+  --dataset.repo_id=AdithyaRajendran/so101_grab_brain_t2 \
+  --batch_size=64 --steps=50000 \
+  --policy.optimizer_lr=1e-4 \
+  --policy.freeze_vision_encoder=true \
+  --policy.train_expert_only=true \
+  --policy.chunk_size=50 --policy.n_action_steps=50 \
+  --dataset.image_transforms.enable=true
+```
+
+### Step 3: Curriculum Training (3 Iterations)
+
+**Proven v1** (batch=64, 50K steps):
+- Loss: 0.449 → 0.052
+- Robot: ~50% grasp, placing works
+
+**Proven v2** (batch=128, 20K steps, from v1 checkpoint):
+- Loss: 0.062 → 0.038
+- Robot: Smoother actions, grasping improved
+
+**Proven v3** (batch=64, 70K steps, from v2 checkpoint):
+- Loss: 0.040 → 0.028
+- Robot: **85% success (17/20+ episodes)**
+
+### Step 4: Inference Optimization
+
+The critical breakthrough — tuning flow matching denoising:
+```bash
+python smolvla_server.py \
+  --policy_repo AdithyaRajendran/smolvla_so101_grab_brain_t2_proven_v3 \
+  --num_steps 20 --n_action_steps 10 --device cuda
+```
+
+### Step 5: Dataset Cleanup
+- Removed garbage episode 240 (533 static frames, zero action variance)
+- Aligned task text: "Grab the brain" (exact match to training)
+- Verified: 239 episodes, 99,845 frames, indices 0-238
+
+### Step 6: Remote Inference Deployment
+- FastAPI server on RunPod (RTX 4090, 48GB VRAM)
+- Multi-threaded client on local PC (cameras + SO-101 robot)
+- SSH tunnel for secure communication
+
+### Result
+**17/20+ episodes successful (~85%)** with continuous policy execution (no restarts between episodes). Robot handles camera displacement, lighting variation, and varied object positions.
+
+---
+
 ## Summary of What I Did
 
 ### Data Collection
-✅ Recorded 241 episodes for ACT (pick-and-place)
-✅ Recorded 241 episodes for SmolVLA (language-conditioned grasping)
-✅ Total: ~200,000 frames collected via teleoperation
+- Recorded 241 episodes for ACT (pick-and-place)
+- Recorded 241 episodes for SmolVLA (language-conditioned grasping)
+- Total: ~200,000 frames collected via teleoperation
 
 ### Model Training
-✅ Trained ACT model successfully (80% success rate)
-✅ Trained SmolVLA v2, v3, v4, v5 (iterative improvements)
-✅ Used Google Colab with V100/A100 GPUs
-✅ Tracked experiments with Weights & Biases
+- Trained ACT model successfully (80% success rate)
+- Trained SmolVLA v2, v3, v4, v5 (iterative improvements)
+- Used Google Colab with V100/A100 GPUs
+- Tracked experiments with Weights & Biases
 
 ### Debugging & Problem Solving
-✅ Identified 6+ critical deployment failures
-✅ Developed quantitative debugging methodology
-✅ Fixed language instruction mismatch (0% → 33% improvement)
-✅ Fixed camera configuration swap
-✅ Optimized training to prevent overfitting (2.5x speedup)
-✅ Balanced action smoothness vs reactivity
+- Identified 6+ critical deployment failures
+- Developed quantitative debugging methodology
+- Fixed language instruction mismatch (0% → 33% improvement)
+- Fixed camera configuration swap
+- Optimized training to prevent overfitting (2.5x speedup)
+- Balanced action smoothness vs reactivity
 
 ### Documentation & Sharing
-✅ Published datasets to HuggingFace Hub
-✅ Published model checkpoints to HuggingFace Hub
-✅ Documented all problems and solutions
-✅ Created reproducible setup guides
-✅ Tracked experiments with W&B
+- Published datasets to HuggingFace Hub
+- Published model checkpoints to HuggingFace Hub
+- Documented all problems and solutions
+- Created reproducible setup guides
+- Tracked experiments with W&B
 
 ---
 
@@ -358,12 +427,12 @@ python lerobot_train.py \
 - **Training time:** ~8 hours
 
 ### SmolVLA Model
-- **Current success rate:** 33% (v5 with language fix)
-- **Target success rate:** >70% (v6 in progress)
+- **Phase 1 success rate:** 33% (v1-v9, gripper oscillation)
+- **Phase 2 success rate:** **85% (17/20+ episodes)** — Proven v3
 - **Task:** "Grab the brain" (language-conditioned)
-- **Model size:** 500M parameters
-- **Training data:** 241 episodes (100,832 frames)
-- **Workspace:** 2×2 inch → targeting 6×6 inch
+- **Model size:** 500M parameters (100M trainable)
+- **Training data:** 239 episodes (99,845 frames)
+- **Key breakthrough:** Inference tuning (num_steps=20, n_action_steps=10)
 
 ### Training Optimization
 - **Original:** 50,000 steps, 15.87 epochs, 9 hours

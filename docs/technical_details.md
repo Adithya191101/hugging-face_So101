@@ -1,10 +1,10 @@
 # Vision-Language-Action Models for Robotic Manipulation
 
-**Project Duration**: December 2024 - January 2025
+**Project Duration**: December 2024 - March 2026
 **Organization**: Independent Research
 **Hardware**: SO-101 Follower Robotic Arm, Dual Camera Setup (Front + Wrist Mounted)
 
-## 🎯 Project Overview
+## Project Overview
 
 Implemented and evaluated state-of-the-art vision-language-action (VLA) models for robotic pick-and-place tasks on a low-cost SO-101 robotic manipulator. Focused on training generalist policies that can interpret natural language instructions and execute manipulation tasks in real-world environments.
 
@@ -12,14 +12,14 @@ Implemented and evaluated state-of-the-art vision-language-action (VLA) models f
 
 ---
 
-## 🤖 Models Implemented & Results
+## Models Implemented & Results
 
 ### 1. Action Chunking Transformer (ACT)
 
 **Task**: Pick and place of soft, irregular round/obloid objects (brain toy)
 
 **Achievements**:
-- ✅ **80% success rate** on pick-and-place tasks with irregular soft objects
+- **80% success rate** on pick-and-place tasks with irregular soft objects
 - Trained on 241 teleoperation demonstrations (~100K frames)
 - Robust to object deformations and position variations
 - Smooth, natural motion trajectories using dual-camera visual feedback
@@ -41,13 +41,14 @@ Implemented and evaluated state-of-the-art vision-language-action (VLA) models f
 
 **Task**: Language-conditioned pick and place with natural language instructions
 
-**Current Status**:
-- 🔬 **In Progress**: Trained to operate in constrained pickup area (2×2 inch workspace)
-- Working on generalizing to larger pickup areas and varied object positions
-- Investigating vision-language conditioning for multi-task capabilities
+**Final Status**:
+- **85% success rate (17/20+ episodes)** via curriculum training (Phase 2, Proven v3)
+- Robust to camera displacement, lighting variation, and varied object positions
+- Language-conditioned: responds to exact task prompt "Grab the brain"
 
-**Achievements to Date**:
-- Successfully trained 5 model iterations (v2-v6) exploring hyperparameter optimization
+**Achievements**:
+- Phase 1: 9 model iterations (v1-v9), Optuna HPO (30 trials), diagnosed gripper oscillation
+- Phase 2: Curriculum training (3 iterations), inference optimization, 85% success
 - Identified and resolved critical issues:
   - Language instruction matching between training and deployment
   - Camera configuration and visual observation consistency
@@ -55,45 +56,65 @@ Implemented and evaluated state-of-the-art vision-language-action (VLA) models f
 - Developed robust training pipeline with automatic dataset versioning
 
 **Technical Details**:
-- Base Model: SmolVLM2-500M-Video-Instruct (HuggingFace)
-- Architecture: Frozen vision encoder + trainable action decoder
-- Training Dataset: 241 episodes (100K frames) + deployment mix augmentation (in progress)
-- Hyperparameters:
-  - chunk_size: 30 (1-second prediction horizon)
-  - n_action_steps: 20 (balanced smoothness and reactivity)
-  - batch_size: 32
-  - learning_rate: 1e-5
-  - Training steps: 20K-25K (6-7 epochs)
-  - Image augmentation: ColorJitter, RandomAffine, SharpnessJitter
+- Base Model: SmolVLM2-500M-Video-Instruct (HuggingFace) [1]
+- Vision Encoder: SigLIP (frozen, pretrained on internet-scale images)
+- Action Head: Trainable expert (~100M of 500M parameters)
+- Training Objective: Conditional Flow Matching [5]
+- Dataset: 239 episodes, 99,845 frames (2 defective episodes removed)
+- Normalization: MEAN_STD (action + state), IDENTITY (visual), RANGE_M100_100 recording
 
-**Experimental Findings**:
-1. **Language Conditioning Critical**:
-   - Task description must match exactly between training and deployment
-   - Model showed 0% success with mismatched instructions, improved with correct matching
+**Phase 2 Training Configuration (Proven v3)**:
+```
+batch_size=64, lr=1e-4, weight_decay=1e-10
+chunk_size=50, n_action_steps=50
+freeze_vision_encoder=True, train_expert_only=True
+use_amp=False, steps=70000 (from v2 checkpoint)
+scheduler: 1K warmup → 50K cosine decay
+Augmentation: ColorJitter, SharpnessJitter, RandomAffine
+```
 
-2. **Visual Observation Consistency**:
-   - Camera configuration mismatch caused complete policy failure
-   - Swapped camera feeds led to spatial reasoning errors (robot targeting wrong objects)
+**Phase 2 Inference Configuration (Critical)**:
+```
+num_steps=20 (default: 10) — increased denoising precision
+n_action_steps=10 (default: 20) — more frequent re-observation
+task="Grab the brain" — exact match to training data
+```
 
-3. **Action Smoothness vs Reactivity Trade-off**:
-   - chunk_size=10: More reactive but jerky motion (10-26° discontinuities)
-   - chunk_size=30: Smoother motion but less reactive to visual feedback
-   - Optimal: chunk_size=30 with n_action_steps=20
+**Curriculum Training Progression**:
 
-4. **Overfitting Diagnosis**:
-   - 15.87 epochs → severe overfitting on 241-episode dataset
-   - 6.35 epochs → optimal generalization
-   - Gripper action distribution: Training (54.5% closed) vs Failed Deployment (0% closed)
+| Iteration | Batch | Steps | Loss | Performance |
+|-----------|-------|-------|------|-------------|
+| Proven v1 | 64 | 50K | 0.052 | ~50% grasp |
+| Proven v2 | 128 | 20K | 0.038 | Smoother |
+| Proven v3 | 64 | 70K | 0.028 | **85% (17/20+)** |
 
-**Next Steps**:
-- Complete deployment mix dataset (50 episodes in actual environment)
-- Train v6 model on merged dataset (241 + 50 = 291 episodes)
-- Target: >70% success rate on generalized pickup area
-- Expand language instruction diversity for multi-task capabilities
+**Key Experimental Findings**:
+
+1. **Inference Parameter Sensitivity**: Default flow matching denoising (10 steps) insufficient for precise manipulation. Doubling to 20 steps eliminated mode-switching between grasping strategies. This single change improved success from ~50% to 85%.
+
+2. **Curriculum Training Effectiveness** [7]: Progressive training from checkpoints (v1→v2→v3) converged faster and to lower loss than training from scratch. Consistent with curriculum learning literature.
+
+3. **Batch Size vs Linear Scaling** [6]: Batch=128 improved over batch=64 (loss 0.038 vs 0.052), but batch=200 showed diminishing returns without proportional LR increase. Batch=64 with more steps gave best results.
+
+4. **Pretrained Vision Robustness**: Frozen SigLIP encoder handled camera displacement and lighting variation without retraining — a key advantage over end-to-end trained models like ACT.
+
+5. **Language Conditioning Precision**: VLA models create distinct embeddings for semantically similar but textually different instructions. Exact prompt matching is critical.
+
+6. **Data Quality Impact**: A single garbage episode (533 frames of static robot) measurably degraded grasping behavior. Dataset auditing is essential.
+
+**Remote Inference Architecture**:
+- FastAPI server on RunPod (RTX 4090, 48GB VRAM)
+- Multi-threaded client on local PC (cameras + SO-101 robot)
+- SSH tunnel, ~200-300ms inference latency
+
+**Future Work**:
+- Pi0.5 fine-tuning (3B parameters with LoRA)
+- Multi-object curriculum training via language conditioning
+- Sim-to-real transfer leveraging pretrained visual features
 
 ---
 
-## 🛠️ Technical Stack & Tools
+## Technical Stack & Tools
 
 ### Machine Learning & Training
 - **LeRobot Framework**: End-to-end robot learning pipeline (data collection, training, deployment)
@@ -129,7 +150,7 @@ Implemented and evaluated state-of-the-art vision-language-action (VLA) models f
 
 ---
 
-## 📊 Key Metrics & Performance
+## Key Metrics & Performance
 
 ### ACT Model
 | Metric | Value |
@@ -203,7 +224,7 @@ Implemented and evaluated state-of-the-art vision-language-action (VLA) models f
 
 ---
 
-## 📁 Repository Structure *(To Be Published)*
+## Repository Structure *(To Be Published)*
 
 ```
 robot-vla-manipulation/
@@ -291,7 +312,7 @@ robot-vla-manipulation/
 
 ---
 
-## 💡 Skills Demonstrated
+## Skills Demonstrated
 
 ### Technical Skills
 - Deep Learning (PyTorch, Transformers)
@@ -323,13 +344,13 @@ robot-vla-manipulation/
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the Apache 2.0 License - see the LICENSE file for details.
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **HuggingFace** for the LeRobot framework and model hosting infrastructure
 - **SmolVLM Team** for the pre-trained vision-language model

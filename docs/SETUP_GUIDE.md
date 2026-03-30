@@ -301,7 +301,7 @@ print(f"Deployment closed %: {np.mean(eval_gripper < 0.2) * 100:.1f}%")
 
 ## Problems I Faced & Solutions
 
-### Problem 1: Language Instruction Mismatch ⚠️ CRITICAL
+### Problem 1: Language Instruction Mismatch WARNING: CRITICAL
 
 **What happened:**
 - Robot went near object but gripper NEVER closed (0% success)
@@ -322,7 +322,7 @@ print(f"Deployment closed %: {np.mean(eval_gripper < 0.2) * 100:.1f}%")
 
 ---
 
-### Problem 2: Camera Configuration Swap ⚠️ CRITICAL
+### Problem 2: Camera Configuration Swap WARNING: CRITICAL
 
 **What happened:**
 - After environment adjustment, robot crashed into BIN instead of object
@@ -480,13 +480,13 @@ python lerobot_train.py \
 
 ## What I Accomplished
 
-✅ Implemented ACT model with **80% success rate** on soft irregular objects
-✅ Trained SmolVLA (500M parameters) for language-conditioned manipulation
-✅ Debugged 6+ critical deployment failures systematically
-✅ Optimized training (2.5x faster) while improving generalization
-✅ Developed quantitative debugging methodology
-✅ Published datasets and models to HuggingFace Hub
-✅ Documented all problems and solutions for reproducibility
+- Implemented ACT model with **80% success rate** on soft irregular objects
+- Trained SmolVLA (500M parameters) for language-conditioned manipulation
+- Debugged 6+ critical deployment failures systematically
+- Optimized training (2.5x faster) while improving generalization
+- Developed quantitative debugging methodology
+- Published datasets and models to HuggingFace Hub
+- Documented all problems and solutions for reproducibility
 🔄 Working on mixed-dataset training for visual generalization (v6)
 
 ---

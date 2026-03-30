@@ -2,7 +2,7 @@
 
 All project files have been organized and are ready for GitHub!
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 robot-vla-project/
@@ -31,13 +31,13 @@ robot-vla-project/
 
 ---
 
-## 📄 File Descriptions
+## File Descriptions
 
 ### Root Files
 
 **README.md**
 - Complete project overview
-- ACT (80% success) and SmolVLA (33% → >70% target)
+- ACT (80% success) and SmolVLA (85% success via curriculum training)
 - All 6+ problems documented
 - Tools: HuggingFace, W&B, PyTorch, Colab
 - Metrics tables
@@ -58,19 +58,31 @@ robot-vla-project/
 ### docs/ Directory
 
 **challenges_and_solutions.md**
-- 6+ critical problems with detailed solutions
+- 17 challenges with detailed solutions (Phase 1 + Phase 2)
 - Root cause analysis for each
 - STAR format interview answers
 - Key learnings and impact
 
-Problems covered:
+Phase 1 challenges (1-7):
 1. Language instruction mismatch (0% → 33%)
-2. Camera configuration swap (complete failure → working)
-3. Overfitting (15.87 → 6.35 epochs, 2.5x speedup)
+2. Camera configuration swap
+3. Overfitting diagnosis
 4. Action smoothness trade-off
 5. Batch size confusion
 6. Starting state inconsistency
-7. Visual distribution shift (ongoing)
+7. Visual distribution shift
+
+Phase 2 challenges (8-17):
+8. Training methodology discovery
+9. use_degrees normalization mismatch
+10. Garbage episode in dataset
+11. Task text mismatch (refined)
+12. Flow matching denoising precision (THE breakthrough)
+13. Batch size and linear scaling
+14. Curriculum training discovery
+15. Remote inference architecture
+16. Video recording contention
+17. Disk space management
 
 **technical_details.md**
 - Complete technical reference
@@ -79,7 +91,7 @@ Problems covered:
 - Hardware specifications
 - Full repository structure
 
-**SETUP_GUIDE.md** ⭐ **NEW - Contains all command lines!**
+**SETUP_GUIDE.md** **NEW - Contains all command lines!**
 - Every command I used in the project
 - Environment setup commands
 - ACT training commands
@@ -90,12 +102,13 @@ Problems covered:
 - **What I accomplished step-by-step**
 - HuggingFace and W&B links
 
-**PROJECT_WORKFLOW.md** ⭐ **NEW - Shows my complete workflow!**
+**PROJECT_WORKFLOW.md** **NEW - Shows my complete workflow!**
 - Phase 1: ACT implementation (Weeks 1-2)
 - Phase 2: SmolVLA implementation (Weeks 3-4)
 - Phase 3: Debugging (Weeks 5-6)
 - Phase 4: SmolVLA v5 training
-- Phase 5: Current work (v6 in progress)
+- Phase 5: HPO + Diagnosis
+- Phase 6: Curriculum Training Breakthrough (85% success)
 - **Every step I took for each problem**
 - **What I did and what I learned**
 - Tools & technologies used
@@ -129,9 +142,9 @@ Problems covered:
 
 ---
 
-## ✅ What's Included
+## - What's Included
 
-### Documentation ✅
+### Documentation 
 - [x] Complete README with project overview
 - [x] All 6+ problems documented in detail
 - [x] **Command-line reference for every step**
@@ -140,19 +153,19 @@ Problems covered:
 - [x] STAR format interview answers
 - [x] Quick start guide
 
-### Metrics ✅
+### Metrics 
 - [x] ACT: 80% success rate
 - [x] SmolVLA: 33% current, >70% target
 - [x] Training: 241 episodes, 100K+ frames
 - [x] Optimization: 2.5x training speedup
 
-### Tools & Links ✅
+### Tools & Links 
 - [x] HuggingFace datasets and models
 - [x] Weights & Biases project
 - [x] PyTorch, LeRobot, Transformers
 - [x] Google Colab training setup
 
-### Problem Documentation ✅
+### Problem Documentation 
 - [x] Language instruction mismatch
 - [x] Camera configuration swap
 - [x] Overfitting diagnosis
@@ -205,7 +218,7 @@ git commit -m "Initial commit: Robot VLA manipulation project
 - Complete command-line reference and workflow
 - All problems faced with systematic solutions
 
-🤖 Generated with Claude Code
+Generated with Claude Code
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 # Create GitHub repo (via browser or gh CLI)
@@ -240,7 +253,7 @@ git commit -m "Add comprehensive documentation and project structure
 - STAR format interview answers for problem-solving
 - Metrics, tools, and HuggingFace links
 
-🤖 Generated with Claude Code
+Generated with Claude Code
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 git push origin main
@@ -248,7 +261,7 @@ git push origin main
 
 ---
 
-## 📊 Key Highlights for Resume
+## Key Highlights for Resume
 
 **Copy-paste ready:**
 
@@ -269,7 +282,7 @@ Skills: Systematic debugging, root cause analysis, quantitative evaluation
 
 ---
 
-## 🎯 What Makes This Stand Out
+## What Makes This Stand Out
 
 1. **Real Implementation** - Not just tutorials
 2. **Problem-Solving** - 6+ major issues systematically debugged
@@ -292,18 +305,18 @@ Skills: Systematic debugging, root cause analysis, quantitative evaluation
 
 ---
 
-## ✨ You're Ready!
+##  You're Ready!
 
 All your system files are organized and ready to push to GitHub. The documentation includes:
 
-✅ Complete project overview
-✅ All problems faced with detailed solutions
-✅ **Every command-line step you used**
-✅ **Complete workflow of what you did**
-✅ Metrics and success rates
-✅ Tools and technologies
-✅ Interview-ready STAR format answers
-✅ Quick start guide for others
+- Complete project overview
+- All problems faced with detailed solutions
+- **Every command-line step you used**
+- **Complete workflow of what you did**
+- Metrics and success rates
+- Tools and technologies
+- Interview-ready STAR format answers
+- Quick start guide for others
 
 **Your GitHub repository will demonstrate:**
 - Technical implementation skills

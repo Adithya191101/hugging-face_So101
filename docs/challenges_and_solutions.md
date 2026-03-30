@@ -6,7 +6,7 @@ This document details the major technical challenges encountered during the impl
 
 ---
 
-## 🔴 Challenge 1: Language Instruction Mismatch (Critical)
+## Challenge 1: Language Instruction Mismatch (Critical)
 
 ### Problem Description
 After training SmolVLA model (v2-v5) with 241 episodes, robot would approach the object but **gripper never closed** during deployment (0% success rate).
@@ -62,7 +62,7 @@ But during deployment received:
 
 ---
 
-## 🔴 Challenge 2: Camera Configuration Mismatch (Critical)
+## Challenge 2: Camera Configuration Mismatch (Critical)
 
 ### Problem Description
 After attempting to match training environment setup, robot behavior got **dramatically worse** - crashed into bin instead of approaching object. All models (v3, v4, v5) failed identically.
@@ -135,7 +135,7 @@ lerobot-record --display_data=true  # Visually verify camera assignments
 
 ---
 
-## 🟡 Challenge 3: Overfitting on Small Dataset (Moderate)
+## Challenge 3: Overfitting on Small Dataset (Moderate)
 
 ### Problem Description
 Training for 50,000 steps resulted in very low loss (0.014) but poor generalization during deployment.
@@ -156,7 +156,7 @@ Training for 50,000 steps resulted in very low loss (0.014) but poor generalizat
 **Mathematical calculation**:
 ```
 Steps per epoch = 100,832 frames / 32 batch_size = 3,151 steps/epoch
-50,000 steps / 3,151 = 15.87 epochs ⚠️  TOO MANY
+50,000 steps / 3,151 = 15.87 epochs WARNING:  TOO MANY
 ```
 
 **What happens with overfitting**:
@@ -170,7 +170,7 @@ Steps per epoch = 100,832 frames / 32 batch_size = 3,151 steps/epoch
 **Optimal training duration**:
 ```
 Target: 6-7 epochs for 241-episode dataset
-6.35 epochs × 3,151 steps/epoch = 20,000 steps ✅
+6.35 epochs × 3,151 steps/epoch = 20,000 steps 
 ```
 
 **v5 Retraining configuration**:
@@ -196,7 +196,7 @@ Target: 6-7 epochs for 241-episode dataset
 
 ---
 
-## 🟡 Challenge 4: Action Smoothness vs Reactivity Trade-off (Moderate)
+## Challenge 4: Action Smoothness vs Reactivity Trade-off (Moderate)
 
 ### Problem Description
 Robot exhibited jerky, discontinuous motion during deployment causing unnatural movement and potential safety issues.
@@ -256,7 +256,7 @@ n_action_steps = 20      # Execute 0.67 seconds before re-planning
 
 ---
 
-## 🟡 Challenge 5: Batch Size Confusion (Resolved)
+## Challenge 5: Batch Size Confusion (Resolved)
 
 ### Problem Description
 Initial concern that batch_size=32 might be causing overfitting, considering reducing to 5, 8, or 10.
@@ -271,16 +271,16 @@ Overfitting ∝ Number of epochs
 Epochs = (Total steps × Batch size) / Dataset size
 
 With batch_size=32, steps=50,000:
-Epochs = (50,000 × 32) / 100,832 = 15.87 ⚠️
+Epochs = (50,000 × 32) / 100,832 = 15.87 
 
 With batch_size=10, steps=50,000:
-Epochs = (50,000 × 10) / 100,832 = 4.96 ✅
+Epochs = (50,000 × 10) / 100,832 = 4.96 
 BUT: Training time 3-4x longer for same epochs!
 ```
 
 **Correct approach**: Reduce steps, keep batch_size=32
 ```
-Epochs = (20,000 × 32) / 100,832 = 6.35 ✅
+Epochs = (20,000 × 32) / 100,832 = 6.35 
 Training time: 3.5 hours (optimal)
 ```
 
@@ -306,7 +306,7 @@ Training time: 3.5 hours (optimal)
 
 ---
 
-## 🟢 Challenge 6: Starting State Inconsistency (Solved)
+## Challenge 6: Starting State Inconsistency (Solved)
 
 ### Problem Description
 Robot performance varied dramatically between episodes despite using same trained model.
@@ -383,16 +383,16 @@ robot.disconnect()
 
 ---
 
-## 🟢 Challenge 7: Visual Distribution Shift (Identified)
+## Challenge 7: Visual Distribution Shift (Identified)
 
 ### Problem Description
 Even with correct language, camera config, and starting state, v4 model still showed 0% success rate (gripper never closed).
 
 **Evidence**:
-- Perfect starting states (close to training averages) ✅
-- Correct language instruction ("Grab the brain") ✅
-- Correct camera configuration ✅
-- Still: Gripper mean 28.29 vs training 6.83 ❌
+- Perfect starting states (close to training averages) 
+- Correct language instruction ("Grab the brain") 
+- Correct camera configuration 
+- Still: Gripper mean 28.29 vs training 6.83 
 
 ### Analysis
 
@@ -447,31 +447,300 @@ lerobot-train --dataset.repo_id="training_data,deployment_mix" --steps=25000
 
 ---
 
-## 📊 Summary of Impact
-
-| Challenge | Time Lost | Solution Time | Impact |
-|-----------|-----------|---------------|--------|
-| Language mismatch | 2 weeks | 2 days | Critical - 0% → 33% success |
-| Camera swap | 1 week | 1 day | Critical - Prevented all progress |
-| Overfitting | 1 week | 3 days | High - 2.5x faster training |
-| Action smoothness | 3 days | 1 day | Moderate - Safer motion |
-| Batch size confusion | 2 days | 4 hours | Low - Avoided wasted effort |
-| Starting state | 2 days | 1 day | Moderate - Improved consistency |
-| Visual distribution | Ongoing | In progress | High - Key to generalization |
-
-**Total debugging time**: ~6 weeks of iterative problem-solving
-
-**Skills demonstrated**:
-- ✅ Systematic debugging methodology
-- ✅ Root cause analysis
-- ✅ Hypothesis-driven experimentation
-- ✅ Understanding of VLA model internals
-- ✅ Data-centric approach to ML
-- ✅ Persistence and problem-solving
+## Phase 2 Challenges (March 2026)
 
 ---
 
-## 💡 Key Takeaways for Future Projects
+## Challenge 8: Training Methodology Discovery (Critical)
+
+### Problem Description
+After 9 model versions and 30 Optuna trials, SmolVLA was capped at ~33% success. The initial conclusion was that SmolVLA 500M lacked the capacity for precise manipulation — a **wrong diagnosis**.
+
+### Investigation Process
+
+1. **Literature review**: Studied Diffusion Policy [Chi et al., 2023] iterative behavior policy refinement, SmolVLA paper ablation tables, and community fine-tuning reports
+2. **Key insight from SmolVLA paper**: batch_size=64, lr=1e-4 with frozen vision encoder achieved 75-90% success. Our Phase 1 used batch=32, lr=4.24e-5 (HPO-optimized but wrong)
+3. **Paper ablation**: lr=1e-5 gives **0% success rate**. Our HPO had converged toward lower LRs — exactly the wrong direction
+
+### Solution
+Complete training methodology shift:
+- batch_size=64 (not 32), lr=1e-4 (not 4.24e-5)
+- freeze_vision_encoder=True, train_expert_only=True
+- chunk_size=50 (not 10), n_action_steps=50
+- Curriculum training from checkpoints [Bengio et al., 2009]
+
+### Key Learnings
+1. **HPO can converge to wrong optima** when the search space excludes the correct configuration
+2. **Paper ablations are essential reading** — the SmolVLA paper explicitly showed lr=1e-5 fails
+3. The issue was training methodology, not model capacity
+
+---
+
+## Challenge 9: use_degrees Normalization Mismatch (Critical)
+
+### Problem Description
+After upgrading LeRobot from v0.4 to v0.5+, the robot exhibited ~5° height errors on all joints. Actions were visibly off despite using the same model.
+
+### Investigation Process
+1. Discovered LeRobot v0.5+ changed the default normalization from `RANGE_M100_100` to `DEGREES`
+2. Dataset was recorded with `use_degrees=False` (RANGE_M100_100), but the new default assumed degrees
+3. The normalization mismatch scaled all action values incorrectly
+
+### Solution
+Explicitly set `use_degrees=False` in both follower and leader configs:
+```python
+# config_so_follower.py
+use_degrees: bool = False  # Must match dataset recording format
+```
+
+### Key Learnings
+1. **Always verify normalization after framework updates** — replay a dataset episode to confirm
+2. **Document the recording format** with the dataset
+3. Breaking changes in defaults can silently corrupt trained policies
+
+---
+
+## Challenge 10: Garbage Episode in Dataset (Data Quality)
+
+### Problem Description
+Dataset analysis revealed episode 240 was **completely static** — 533 frames where all 6 joints had exactly zero action variance. The robot was sitting idle.
+
+### Investigation Process
+1. Ran comprehensive dataset quality audit: per-episode action statistics
+2. Found episode 240 with std=0.0000 on ALL joints
+3. Also discovered metadata inconsistency: `info.json` said 239 episodes, but parquet files contained 240 (indices 0-238 + 240, with 239 missing)
+4. Root cause: earlier manual episode deletion removed episode 239 but left the orphaned episode 240 in `file-006.parquet`
+
+### Solution
+```bash
+# Removed orphan files from local dataset + HuggingFace Hub
+rm data/chunk-000/file-006.parquet
+rm meta/episodes/chunk-000/file-006.parquet
+# Also removed orphan video files via HuggingFace API
+```
+
+Verified: 239 episodes (0-238), 99,845 frames, no gaps.
+
+### Key Learnings
+1. **Dataset auditing is essential** — one garbage episode (0.5% of data) can measurably degrade performance
+2. **Manual deletions leave orphans** — always verify index continuity after removing episodes
+3. **Zero-variance data teaches "do nothing"** — directly counterproductive for manipulation tasks
+
+---
+
+## Challenge 11: Task Text Mismatch — Refined Understanding
+
+### Problem Description
+Same class of bug as Challenge 1, but discovered **again** in Phase 2. Dataset stored the task as "Grab the brain" but the evaluation client used "Grab the grey brain toy and place it inside the green container."
+
+### Investigation Process
+1. Checked `tasks.parquet` in dataset metadata — task text was "Grab the brain"
+2. Client code had a different, more descriptive default string
+3. SmolVLA creates distinct embeddings for semantically similar but textually different instructions [1]
+
+### Solution
+Changed client default to exact dataset text:
+```python
+task: str = "Grab the brain"  # Must match training exactly
+```
+
+### Key Learnings
+1. **This bug class is persistent** — even after fixing it once, it recurred with different text
+2. **VLA prompt engineering requires exact matching**, not semantic equivalence
+3. **Automate prompt verification** — compare eval prompt against dataset metadata programmatically
+
+---
+
+## Challenge 12: Flow Matching Denoising Precision — THE Breakthrough
+
+### Problem Description
+Even with correct training config and curriculum training, the robot still showed ~50% grasp success. The model would approach the object, attempt to grasp, release, try a different angle, release again — oscillating between grasping strategies.
+
+### Investigation Process
+1. **Analyzed the behavior**: Model had learned multiple grasping approaches (one per object position in training data). At inference, it couldn't commit to a single strategy
+2. **Compared ACT vs SmolVLA**: ACT (deterministic regression) grasps consistently. SmolVLA (stochastic flow matching [5]) produces slightly different actions each inference
+3. **Identified root cause**: Default `num_steps=10` for flow matching denoising produced insufficient precision. The 10-step denoising process couldn't resolve the multimodal action distribution into a single, committed grasp trajectory
+4. **Hypothesis**: More denoising steps should allow the model to commit to one mode. Fewer action steps before re-observation should allow faster correction
+
+### Solution
+| Parameter | Default | Optimized | Effect |
+|-----------|---------|-----------|--------|
+| `num_steps` | 10 | **20** | 2x denoising → precise action generation |
+| `n_action_steps` | 20 | **10** | 2x re-observation → faster closed-loop correction |
+
+### Key Learnings
+1. **Inference parameters can matter as much as training** — this single change was the largest improvement in the entire project
+2. **Flow matching precision scales with denoising steps** [5] — default values are not optimal for all tasks
+3. **Multimodal action distributions need sufficient denoising** to resolve into committed trajectories
+4. **Closed-loop frequency matters** — re-observing every 10 steps enables mid-grasp correction
+
+**Impact**: ~50% → 85% success rate. The single most impactful discovery.
+
+---
+
+## Challenge 13: Batch Size and Linear Scaling Rule
+
+### Problem Description
+Attempted to improve training by increasing batch size from 64 to 128 to 200. Batch=128 improved loss (0.038 vs 0.052), but batch=200 showed diminishing returns.
+
+### Investigation Process
+1. Batch=64 (v1): loss 0.052 in 50K steps
+2. Batch=128 (v2): loss 0.038 in 20K steps — significant improvement
+3. Batch=200 (v3 attempt): loss plateaued, convergence slower than expected
+4. **Root cause**: Linear scaling rule [6] — when batch size increases, LR should increase proportionally. We kept LR=1e-4 for all runs
+
+### Solution
+Abandoned batch=200 and returned to batch=64 with more training steps (70K). The extended training with original batch size outperformed the larger batch:
+- Batch=64, 70K steps → loss **0.028** (best)
+- Batch=200, early → loss ~0.040 (plateau)
+
+### Key Learnings
+1. **Linear scaling rule [6]** applies to fine-tuning but breaks at large batch sizes
+2. **More steps with correct batch > fewer steps with larger batch** for this dataset size (239 episodes)
+3. **Don't chase lower loss through batch size alone** — training duration matters more
+
+---
+
+## Challenge 14: Curriculum Training Discovery
+
+### Problem Description
+Each training run started from scratch (pretrained SmolVLA base), requiring 50K+ steps to converge. Switching to training from previous checkpoints dramatically improved convergence.
+
+### Investigation Process
+1. Observed v2 (starting from v1 checkpoint) converged to lower loss (0.038) in only 20K steps
+2. v3 (starting from v2 checkpoint) achieved the lowest loss (0.028) in 70K steps
+3. This follows the principle of curriculum learning [7] — start with a broadly trained policy and progressively refine
+
+### Solution
+Curriculum training pipeline:
+```
+SmolVLA base → Proven v1 (50K steps) → Proven v2 (20K steps) → Proven v3 (70K steps)
+```
+
+Each iteration inherits the learned representations and refines them further, similar to iterative policy refinement in Diffusion Policy [2].
+
+### Key Learnings
+1. **Curriculum training [7] outperforms training from scratch** for small datasets
+2. **Progressive checkpoint refinement** enables exploring different batch sizes and schedules
+3. **Each iteration can focus on different aspects** — v1 learns basics, v2 refines with larger batch, v3 extends with more steps
+
+---
+
+## Challenge 15: Remote Inference Architecture
+
+### Problem Description
+Local GPU (RTX 3050 Laptop) was too slow for real-time SmolVLA inference. The model requires ~200ms per inference on an RTX 4090 but takes 2-3 seconds on RTX 3050.
+
+### Investigation Process
+1. Profiled inference latency: local GPU ~2.5s per chunk (unacceptable at 10 FPS control)
+2. Cloud GPU (RunPod) achieves ~200ms but robot hardware is local
+3. Needed to split inference (cloud) from control (local)
+
+### Solution
+Designed server-client architecture:
+- **Server** (`smolvla_server.py`): FastAPI HTTP server on RunPod GPU, loads model once, serves inference via JSON
+- **Client** (`smolvla_client.py`): Multi-threaded — inference requests, action execution, video recording
+- **Connection**: SSH tunnel for secure communication
+- **Latency**: ~200-300ms round-trip including network
+
+### Key Learnings
+1. **Server-client split enables GPU-limited researchers** to use powerful models with local robots
+2. **SSH tunneling** provides secure communication without exposing ports
+3. **Multi-threaded client** prevents inference latency from blocking motor control
+
+---
+
+## Challenge 16: Video Recording vs Robot Performance
+
+### Problem Description
+Adding camera recording to the eval client degraded robot performance. The robot moved slower and less precisely when recording was active.
+
+### Investigation Process
+1. Recording thread called `robot.get_observation()` with `robot_lock` — competing with inference thread
+2. Each camera read takes ~50-100ms, doubling the lock contention
+3. The inference thread was delayed, causing stale action predictions
+
+### Solution
+Shared frame buffer approach:
+- Inference thread writes camera frames to shared buffer after each observation
+- Recorder thread reads from buffer without acquiring robot lock
+- Zero additional camera reads, zero lock contention
+- Used pyav (h264) encoder for compatible video output with signal handler for graceful shutdown
+
+### Key Learnings
+1. **Resource contention** between threads can silently degrade real-time control
+2. **Shared memory patterns** enable recording without performance impact
+3. **Graceful shutdown** is essential for video encoding — SIGTERM must flush the encoder
+
+---
+
+## Challenge 17: Disk Space Management (RunPod + Local)
+
+### Problem Description
+Both RunPod (30GB disk + 30GB volume) and local machine (53GB, 1GB free) ran critically low on storage during training.
+
+### Investigation Process
+1. **RunPod**: 10 checkpoints x 1.3GB = 13GB, HF cache 7.9GB, wandb cache 12GB
+2. **Local**: Firefox cache 3.9GB, snap old revisions 5.5GB, VS Code 2.3GB
+
+### Solution
+- Deleted intermediate checkpoints (kept only key ones: 20K, 50K)
+- Cleaned wandb cache (12GB freed)
+- Cleaned HF model cache for unused models
+- Locally: purged Firefox cache, snap old revisions
+- Result: RunPod root 20% used (from 67%), local 3.5GB free (from 1GB)
+
+### Key Learnings
+1. **Monitor disk space during long training runs** — 50K steps generate many checkpoints
+2. **Clean wandb cache periodically** — it grows silently
+3. **Only keep essential checkpoints** — final model is pushed to HuggingFace Hub
+
+---
+
+## Summary of Impact
+
+### Phase 1
+
+| Challenge | Time Lost | Solution Time | Impact |
+|-----------|-----------|---------------|--------|
+| Language mismatch | 2 weeks | 2 days | Critical — 0% → 33% success |
+| Camera swap | 1 week | 1 day | Critical — Prevented all progress |
+| Overfitting | 1 week | 3 days | High — 2.5x faster training |
+| Action smoothness | 3 days | 1 day | Moderate — Safer motion |
+| Batch size confusion | 2 days | 4 hours | Low — Avoided wasted effort |
+| Starting state | 2 days | 1 day | Moderate — Improved consistency |
+| Visual distribution | 3 days | 2 days | High — Key to generalization |
+
+### Phase 2
+
+| Challenge | Time Lost | Solution Time | Impact |
+|-----------|-----------|---------------|--------|
+| Training methodology | 4 weeks | 3 days | **Critical — 33% → 50%** |
+| use_degrees mismatch | 2 days | 2 hours | Critical — Prevented deployment |
+| Garbage episode | 1 day | 2 hours | Moderate — Cleaner training |
+| Task text (refined) | 1 day | 1 hour | Moderate — Improved confidence |
+| **Denoising precision** | **3 days** | **4 hours** | **Critical — 50% → 85%** |
+| Batch size scaling | 2 days | 1 day | Moderate — Optimal convergence |
+| Curriculum training | 1 day | 1 day | High — Faster convergence |
+| Remote inference | 3 days | 2 days | High — Enabled deployment |
+| Recording contention | 1 day | 4 hours | Low — Clean video capture |
+| Disk management | 1 day | 2 hours | Low — Prevented interruptions |
+
+**Total debugging time**: ~12 weeks across both phases
+
+**Skills demonstrated**:
+- Systematic debugging methodology
+- Root cause analysis with quantitative evidence
+- Hypothesis-driven experimentation
+- Deep understanding of VLA model internals (flow matching, denoising, language conditioning)
+- Data-centric approach to ML (dataset auditing, quality verification)
+- Literature-informed research (Diffusion Policy, Curriculum Learning, Linear Scaling Rule)
+- Systems engineering (server-client architecture, multi-threaded control)
+- Persistence across 17 distinct technical challenges
+
+---
+
+## Key Takeaways for Future Projects
 
 ### 1. Documentation is Critical
 - Document exact training configuration (language, camera setup, starting state)
@@ -500,7 +769,7 @@ lerobot-train --dataset.repo_id="training_data,deployment_mix" --steps=25000
 
 ---
 
-## 🎯 For Resume/Interview
+## For Resume/Interview
 
 **When asked "Tell me about a challenging problem you solved":**
 

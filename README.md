@@ -114,14 +114,22 @@ All 9 versions exhibited identical behavior — the robot approaches correctly b
 
 ## Phase 2: Curriculum Training to 85% Success
 
-### Methodology
+### Methodology: Why Curriculum Training for SmolVLA?
 
-After diagnosing the gripper oscillation, we adopted a curriculum training approach [7] inspired by iterative policy refinement in Diffusion Policy [2]. Rather than training from scratch with different hyperparameters, we:
+The key insight came from studying Diffusion Policy [2], which demonstrated that behavior policies can be trained through **iterative denoising** — starting from random noise and progressively refining into precise actions over multiple steps. SmolVLA itself uses Conditional Flow Matching [5], which follows the same principle at inference time: iteratively denoise a noise sample into an action prediction through `num_steps` denoising iterations.
 
-1. **Explored the action manifold** via LoRA fine-tuning [4]
+We applied this denoising principle at the **training level**: if iterative refinement works for converting noise into actions (inference), it should also work for converting a generic pretrained policy into a task-specialized one (training). This is particularly critical for our setup:
+
+- **Small dataset (239 episodes):** Training from scratch doesn't provide enough signal for the model to learn both visual understanding and precise manipulation. Starting from pretrained weights preserves the VLM's prior knowledge of objects, scenes, and spatial relationships.
+- **Unique deformable object:** The brain toy has no standard grasp geometry — the model needs to discover object-specific grasping strategies through progressive refinement rather than memorizing fixed trajectories.
+- **Frozen vision encoder:** Since only the action expert is trainable (~100M of 500M parameters), each iteration needs to efficiently specialize the limited trainable capacity rather than learning everything from scratch.
+
+This led to a four-step approach inspired by curriculum learning [7]:
+
+1. **Explored the action manifold** via LoRA fine-tuning [4] — efficient parameter exploration
 2. **Established a strong base policy** through full expert training with pretrained backbone
-3. **Iteratively refined** through 3 curriculum training stages
-4. **Optimized inference** by tuning the flow matching denoising process [5]
+3. **Iteratively refined** through 3 curriculum training stages — each building on the previous, analogous to denoising steps refining noise into actions
+4. **Optimized inference** by tuning the flow matching denoising process [5] — more denoising steps for more precise actions
 
 ### Step 1: LoRA Fine-Tuning (Action Space Exploration)
 
